@@ -1,0 +1,21 @@
+[project]
+name = "beamshaper"
+version = "0.1.0"
+description = "Gaussian-to-flat-top beam shaping via aspheric lens optimization"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "jax>=0.4.20",
+    "jaxlib>=0.4.20",
+    "optax>=0.1.7",
+    "plotly>=5.18",
+    "dash>=2.14",
+    "scipy>=1.11",
+]
+
+[project.optional-dependencies]
+mesh = [
+    "numba>=0.58",
+    "pyvista>=0.37",
+    "matplotlib>=3.5",
+]

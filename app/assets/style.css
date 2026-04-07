@@ -1,0 +1,59 @@
+/* Dark theme overrides for Dash components */
+
+body {
+    margin: 0;
+    padding: 0;
+    background: #1a1a1a;
+    color: #eee;
+}
+
+/* Slider styling */
+.rc-slider-track {
+    background-color: #2196F3 !important;
+}
+.rc-slider-handle {
+    border-color: #2196F3 !important;
+    background-color: #2196F3 !important;
+}
+.rc-slider-rail {
+    background-color: #444 !important;
+}
+.rc-slider-dot {
+    border-color: #444 !important;
+}
+
+/* Input styling */
+input[type="number"] {
+    background: #2a2a2a !important;
+    color: #eee !important;
+    border: 1px solid #555 !important;
+}
+
+/* Button hover effects */
+button:hover {
+    filter: brightness(1.15);
+}
+button:active {
+    filter: brightness(0.9);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Radio buttons */
+.form-check-input:checked {
+    background-color: #2196F3;
+    border-color: #2196F3;
+}

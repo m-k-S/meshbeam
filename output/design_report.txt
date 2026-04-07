@@ -1,0 +1,43 @@
+BEAM SHAPER: PM780 FIBER → 15mm FLAT-TOP
+==================================================
+
+OPTICAL LAYOUT (beam propagates in +Z):
+  [PM780 fiber] → [Collimator f=11mm] → [Lens 1] --100mm-- [Lens 2] → flat-top
+
+Input fiber:     780PM, 0.12NA, 5.3um MFD
+Collimator:      Off-the-shelf, f=11mm (e.g. Thorlabs F220APC-780)
+                 Produces w0 ≈ 1.0mm collimated Gaussian
+Wavelength:      780 nm
+Refractive index:1.52 (polymerized IP-S at 780nm)
+
+LENS 1 (Redistributor) — print on glass substrate:
+  Aperture:    3.0 mm diameter
+  Thickness:   0.50mm center, 0.623mm edge
+  Max sag:     123.3 um
+  Orientation: Flat face toward collimator (glass substrate side)
+  Mount:       Aspheric face toward lens 2
+
+LENS 2 (Collimator) — print on glass substrate:
+  Aperture:    15.0 mm diameter
+  Thickness:   0.50mm center, 0.977mm edge
+  Max sag:     477.4 um
+  Orientation: Aspheric face toward lens 1
+  Mount:       Flat face (glass substrate) toward target
+
+SPACING:
+  Lens 1 to Lens 2: 100 mm (center-to-center)
+  Mount in SM1 tube or 30mm cage system
+
+PERFORMANCE:
+  Collimation:    1 urad
+  Uniformity:     3.9% CV (Poisson-limited)
+  Flat-top from:  lens 2 exit to >200mm
+  Target region:  starts 60mm from lens 2
+
+FABRICATION NOTES:
+  - Print each lens separately on a glass cover slip
+  - Glass substrate = flat (plano) face of the lens
+  - Use IP-S or equivalent transparent resin
+  - Verify n at 780nm for your resin batch
+  - Surface roughness target: <20nm RMS
+  - STL files are in mm units

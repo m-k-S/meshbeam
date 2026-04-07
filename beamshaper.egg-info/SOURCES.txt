@@ -1,0 +1,7 @@
+pyproject.toml
+beamshaper/__init__.py
+beamshaper.egg-info/PKG-INFO
+beamshaper.egg-info/SOURCES.txt
+beamshaper.egg-info/dependency_links.txt
+beamshaper.egg-info/requires.txt
+beamshaper.egg-info/top_level.txt

@@ -1,0 +1,16 @@
+Metadata-Version: 2.4
+Name: beamshaper
+Version: 0.1.0
+Summary: Gaussian-to-flat-top beam shaping via aspheric lens optimization
+Requires-Python: >=3.10
+Requires-Dist: numpy>=1.24
+Requires-Dist: jax>=0.4.20
+Requires-Dist: jaxlib>=0.4.20
+Requires-Dist: optax>=0.1.7
+Requires-Dist: plotly>=5.18
+Requires-Dist: dash>=2.14
+Requires-Dist: scipy>=1.11
+Provides-Extra: mesh
+Requires-Dist: numba>=0.58; extra == "mesh"
+Requires-Dist: pyvista>=0.37; extra == "mesh"
+Requires-Dist: matplotlib>=3.5; extra == "mesh"
