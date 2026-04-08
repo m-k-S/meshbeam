@@ -29,17 +29,19 @@ from scipy.optimize import least_squares
 from beamshaper.aspheric import AsphericProfile
 
 
-def energy_mapping(r, w0, target_radius, aperture_radius, profile_type='uniform', sg_order=10):
+def energy_mapping(r, w0, target_radius, aperture_radius, profile_type='uniform',
+                   sg_order=10, edge_width=None):
     """
     Energy conservation mapping for truncated Gaussian -> target profile.
 
     Supports:
     - 'uniform': hard flat-top (standard)
-    - 'super_gaussian': I(R) = exp(-2*(R/R0)^(2p)), softer edges
     - 'fermi_dirac': I(R) = 1/(1+exp((R-R0)/Delta)), Hoffnagle-Jefferson
+      Smooth rolloff controlled by edge_width (default R0/10).
+      Suppresses edge diffraction ripple during propagation.
 
-    Soft-edge profiles suppress far-field diffraction ringing compared to
-    the hard flat-top, giving better real-world uniformity.
+    Args:
+        edge_width: Fermi-Dirac rolloff width Delta (meters). Larger = softer edge.
     """
     E_r = 1.0 - np.exp(-2.0 * r ** 2 / w0 ** 2)
     E_a = 1.0 - np.exp(-2.0 * aperture_radius ** 2 / w0 ** 2)
@@ -48,24 +50,32 @@ def energy_mapping(r, w0, target_radius, aperture_radius, profile_type='uniform'
     if profile_type == 'uniform':
         return target_radius * np.sqrt(np.clip(F_in, 0, 1))
 
-    elif profile_type == 'super_gaussian':
-        # Output CDF: F_out(R) = 1 - exp(-(R/R0)^(2p)/p)  (normalized)
-        # Invert: R = R0 * (-p * ln(1-F))^(1/(2p))
-        p = sg_order
-        F_clipped = np.clip(F_in, 0, 1 - 1e-10)
-        return target_radius * (-p * np.log(1.0 - F_clipped)) ** (1.0 / (2.0 * p))
-
     elif profile_type == 'fermi_dirac':
-        # Soft edge with Delta = R0/20
-        delta = target_radius / 20.0
-        # Numerical inversion of Fermi-Dirac CDF
+        if edge_width is None:
+            edge_width = target_radius * 0.10
+
+        # Hoffnagle-Jefferson Fermi-Dirac profile:
+        # I_out(R) = 1 / (1 + exp((R - R0) / Delta))
+        #
+        # Truncate at R_max = R0 + 4*Delta (where I < 2% of peak)
+        # so edge rays don't map to absurd radii.
         from scipy.interpolate import interp1d
-        R_grid = np.linspace(0, target_radius * 1.5, 5000)
-        I_fd = 1.0 / (1.0 + np.exp((R_grid - target_radius) / delta))
-        cdf = np.cumsum(I_fd * R_grid) * (R_grid[1] - R_grid[0]) * 2 * np.pi
+        R_max = target_radius + 4 * edge_width
+        n_grid = 10000
+        R_grid = np.linspace(0, R_max, n_grid)
+        dR = R_grid[1] - R_grid[0]
+        I_fd = 1.0 / (1.0 + np.exp((R_grid - target_radius) / edge_width))
+
+        # CDF: integral of I(R) * R dR (power within radius R)
+        integrand = I_fd * R_grid
+        cdf = np.cumsum(integrand) * dR
         cdf = cdf / cdf[-1]
-        inv_cdf = interp1d(cdf, R_grid, bounds_error=False, fill_value=(0, R_grid[-1]))
-        return inv_cdf(F_in)
+
+        cdf = np.maximum.accumulate(cdf)
+        unique_mask = np.diff(cdf, prepend=-1) > 0
+        inv_cdf = interp1d(cdf[unique_mask], R_grid[unique_mask],
+                           bounds_error=False, fill_value=(0, R_max))
+        return inv_cdf(np.clip(F_in, 0, 1))
 
     return target_radius * np.sqrt(np.clip(F_in, 0, 1))
 
@@ -81,6 +91,7 @@ def design_two_lens_shaper(
     n_points: int = 1000,
     profile_type: str = 'uniform',
     sg_order: int = 10,
+    edge_width: float = None,
     source_distance: float = None,
 ) -> dict:
     """
@@ -118,7 +129,8 @@ def design_two_lens_shaper(
 
     # Ray mapping (supports soft-edge profiles)
     R = energy_mapping(r, w0, target_radius, aperture_radius,
-                       profile_type=profile_type, sg_order=sg_order)
+                       profile_type=profile_type, sg_order=sg_order,
+                       edge_width=edge_width)
 
     # Geometry reference points (all z measured from lens 1 flat face):
     # Lens 1: flat face at z=0, aspheric vertex at z=t1
