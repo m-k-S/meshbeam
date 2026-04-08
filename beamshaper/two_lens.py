@@ -219,31 +219,63 @@ def design_two_lens_shaper(
             dsag2[i] = dsag2[i - 1] if i > 0 else 0.0
 
     # --- Enforce equal OPL by solving algebraically for z2 ---
-    # Only valid for collimated input (source_distance=None).
-    # For diverging input, the Snell-derived slopes already satisfy the
-    # constraints; the OPL formula would need to include the source-to-lens
-    # path which changes the algebra.
-    if source_distance is None or source_distance <= 0:
+    # For collimated input: OPL = n*z1 + air_gap + n*(sep-Z2)
+    # For diverging input:  OPL = fiber_path + n*z1 + air_gap + n*(sep-Z2)
+    # where fiber_path = sqrt(r^2 + d^2) for a ray from fiber to flat face at radius r.
+
+    if source_distance is not None and source_distance > 0:
+        # Diverging: include fiber-to-lens path
+        # On-axis OPL: fiber_d + n*t1 + (sep-t1-t2) + n*t2
+        C_target = source_distance + n_glass * (t1 + t2) + (separation - t1 - t2)
+    else:
+        # Collimated: no fiber path
         C_target = n_glass * (t1 + t2) + (separation - t1 - t2)
 
-        sag2_opl = np.zeros(n_points)
-        for i in range(n_points):
-            z = z1_vertex - sag1[i]
-            ri, Ri = r[i], R[i]
-            L = C_target - n_glass * z - n_glass * separation
-            a_coeff = 1.0 - n_glass ** 2
-            b_coeff = -2.0 * (z + L * n_glass)
-            c_coeff = (Ri - ri) ** 2 + z ** 2 - L ** 2
-            disc = b_coeff ** 2 - 4 * a_coeff * c_coeff
-            if disc >= 0:
-                Z1 = (-b_coeff + np.sqrt(disc)) / (2 * a_coeff)
-                Z2 = (-b_coeff - np.sqrt(disc)) / (2 * a_coeff)
-                s1 = z2_vertex - Z1
-                s2 = z2_vertex - Z2
-                sag2_opl[i] = s1 if abs(s1 - sag2[i]) < abs(s2 - sag2[i]) else s2
-            else:
-                sag2_opl[i] = sag2[i]
-        sag2 = sag2_opl
+    sag2_opl = np.zeros(n_points)
+    for i in range(n_points):
+        z = z1_vertex - sag1[i]  # z-position of lens 1 aspheric surface
+        ri, Ri = r[i], R[i]
+
+        # Fiber path (air, from fiber to lens 1 flat face)
+        if source_distance is not None and source_distance > 0:
+            fiber_opl = np.sqrt(ri ** 2 + source_distance ** 2)
+        else:
+            fiber_opl = 0.0
+
+        # Remaining OPL budget after fiber path and lens 1 glass:
+        # C = fiber_opl + n*z + air_gap_length + n*(sep - Z2)
+        # air_gap_length = sqrt((Ri - ri_asph)^2 + (Z2 - z)^2)
+        # Solve for Z2:
+        # C - fiber_opl - n*z - n*sep = air_gap - n*Z2
+        # Let Rem = C - fiber_opl - n*z - n*sep  (note: Rem < 0 typically)
+        # sqrt((Ri-ri_asph)^2 + (Z2-z)^2) = Rem + n*Z2
+
+        # Account for lateral shift through lens 1 glass
+        if source_distance is not None and source_distance > 0:
+            sin_air_flat = ri / np.sqrt(ri ** 2 + source_distance ** 2)
+            sin_g = sin_air_flat / n_glass
+            cos_g = np.sqrt(max(1.0 - sin_g ** 2, 0))
+            ri_asph = ri + z * sin_g / cos_g if cos_g > 1e-10 else ri
+        else:
+            ri_asph = ri
+
+        Rem = C_target - fiber_opl - n_glass * z - n_glass * separation
+        # (Ri-ri_asph)^2 + (Z2-z)^2 = (Rem + n*Z2)^2
+        # Expand: (Ri-ri_asph)^2 + Z2^2 - 2*Z2*z + z^2 = Rem^2 + 2*Rem*n*Z2 + n^2*Z2^2
+        a_coeff = 1.0 - n_glass ** 2
+        b_coeff = -2.0 * (z + Rem * n_glass)
+        c_coeff = (Ri - ri_asph) ** 2 + z ** 2 - Rem ** 2
+
+        disc = b_coeff ** 2 - 4 * a_coeff * c_coeff
+        if disc >= 0:
+            Z1 = (-b_coeff + np.sqrt(disc)) / (2 * a_coeff)
+            Z2 = (-b_coeff - np.sqrt(disc)) / (2 * a_coeff)
+            s1_cand = z2_vertex - Z1
+            s2_cand = z2_vertex - Z2
+            sag2_opl[i] = s1_cand if abs(s1_cand - sag2[i]) < abs(s2_cand - sag2[i]) else s2_cand
+        else:
+            sag2_opl[i] = sag2[i]
+    sag2 = sag2_opl
 
     # --- Reparameterize sag1 from flat-face radius to aspheric-face radius ---
     # For diverging input, the ray at flat-face radius r hits the aspheric face

@@ -1,0 +1,3 @@
+[submodule "eigen_gbd"]
+	path = eigen_gbd
+	url = https://gitlab.com/mattjaffe/eigen_gbd.git
