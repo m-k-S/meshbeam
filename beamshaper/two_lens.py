@@ -60,7 +60,7 @@ def energy_mapping(r, w0, target_radius, aperture_radius, profile_type='uniform'
         # Truncate at R_max = R0 + 4*Delta (where I < 2% of peak)
         # so edge rays don't map to absurd radii.
         from scipy.interpolate import interp1d
-        R_max = target_radius + 4 * edge_width
+        R_max = target_radius + 3 * edge_width
         n_grid = 10000
         R_grid = np.linspace(0, R_max, n_grid)
         dR = R_grid[1] - R_grid[0]
